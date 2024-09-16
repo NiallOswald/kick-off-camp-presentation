@@ -53,10 +53,6 @@ if __name__ == "__main__":
     # Create solver object.
     solver = FiniteElementWaveEquation(resolution, degree, wave_speed, time_step, u_0, u_1)
     
-    # Generate a grid for plotting.
-    xx = np.linspace(0, 1, 100)
-    yy = np.linspace(0, 1, 100)
-    
     # Generate and save the animation.
-    ani = WaveAnimation(solver, xx, yy)
-    ani(frames=20)
+    ani = WaveAnimation(solver)
+    ani(frames=60)

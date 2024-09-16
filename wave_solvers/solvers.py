@@ -122,7 +122,7 @@ class FiniteElementWaveEquation(WaveEquation):
         # Cast the matrix to a sparse format and use a sparse solver for the
         # linear system. This is vastly faster than the dense alternative.
         A = sp.csr_matrix(A)
-        u.values[:] = sp.spsolve(A, l)
+        u.values[:] = sp.linalg.spsolve(A, l)
 
         # Update the time step.
         self.u_0.values[:] = self.u_1.values
@@ -130,9 +130,9 @@ class FiniteElementWaveEquation(WaveEquation):
 
         super().step()
 
-    def evaluate(self, x):
+    def evaluate(self, *args):
         """Evaluate the wave equation solution at collection of points."""
-        return self.u_1.evaluate(x)
+        return self.u_1.evaluate(*args)
 
 
 class FiniteDifferenceWaveEquation(WaveEquation):
