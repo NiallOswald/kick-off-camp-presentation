@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["wave_solvers"]
+
+[project]
+name = "kick-off-camp-presentation"
+version = "2024.0"
+description="""Code for the group presentation at the MFC CDT Kick-off-camp."""
+license = "MIT"
+authors = [
+    { name = "Niall Oswald", email = "niall.oswald20@imperial.ac.uk" },
+    { name = "Luca Melzi", email = "l.melzi24@imperial.ac.uk" },
+    { name = "Orla O'Neill", email = "orlajeanoneill@gmail.com" },
+]
+dependencies = [
+    "alive-progress",
+    "matplotlib",
+    "numpy", 
+    "scipy",
+]
