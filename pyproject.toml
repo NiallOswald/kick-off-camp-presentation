@@ -20,4 +20,5 @@ dependencies = [
     "matplotlib",
     "numpy", 
     "scipy",
+    "fe_utils@git+https://github.com/Imperial-MATH60022/finite-element-2022-NiallOswald",
 ]
