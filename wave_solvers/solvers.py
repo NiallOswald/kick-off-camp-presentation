@@ -199,3 +199,117 @@ class FiniteElementWaveEquation(WaveEquation):
             )
 
         return self.plots
+
+
+class FiniteDifferenceWaveEquation(WaveEquation):
+    """A finite difference solver for the wave equation."""
+
+    def __init__(self, n, c, dt, u_0, u_1, boundary_conditions="neumann"):
+        """Initialise the finite difference wave equation solver.
+        
+        :param n: The number of grid points in each direction.
+        :param c: The wave speed.
+        :param dt: The time step.
+        :param u_0: The previous state of the wave equation.
+        :param u_1: The current state of the wave equation.
+        """
+        self.n = n
+        self.boundary_conditions = boundary_conditions
+
+        # Compute the spatial step size.
+        self.dx = 1 / (n - 1)
+
+        # Create the grid.
+        x = np.linspace(0, 1, n)
+        self.xx, self.yy = np.meshgrid(x, x)
+
+        # Create the initial conditions.
+        u_0 = u_0(self.xx, self.yy)
+        u_1 = u_1(self.xx, self.yy)
+
+        np.nan_to_num(u_0, copy=False)
+        np.nan_to_num(u_1, copy=False)
+
+        # Compute the CFL number.
+        self.cfl = c * dt / self.dx
+
+        super().__init__(c, dt, u_0, u_1)
+
+    def step(self):
+        """Advance the wave equation by one time step."""
+        # Update the interior of the domain.
+        u = np.zeros_like(self.u_1)
+        u[1:-1, 1:-1] = (self.c * self.dt / self.dx)**2 * (
+            self.u_1[1:-1, :-2] + self.u_1[1:-1, 2:] + self.u_1[:-2, 1:-1] + self.u_1[2:, 1:-1] - 4 * self.u_1[1:-1, 1:-1]
+        ) + 2 * self.u_1[1:-1, 1:-1] - self.u_0[1:-1, 1:-1]
+
+        # Update the boundary conditions.
+        if self.boundary_conditions == "neumann":
+            u = self._neumann(u)
+        elif self.boundary_conditions == "dirichlet":
+            u = self._dirichlet(u)
+
+        self.u_0, self.u_1 = self.u_1, u
+
+        super().step()
+    
+    def evaluate(self):
+        """Evaluate the wave equation solution at collection of points."""
+        return (self.xx, self.yy), self.u_1
+    
+    def _neumann(self, u):
+        """Apply Neumann boundary conditions to the solution."""
+        u[0, :] = (4 * u[1, :] - u[2, :]) / 3
+        u[-1, :] = (4 * u[-2, :] - u[-3, :]) / 3
+        u[:, 0] = (4 * u[:, 1] - u[:, 2]) / 3
+        u[:, -1] = (4 * u[:, -2] - u[:, -3]) / 3
+        return u
+    
+    def _dirichlet(self, u):
+        """Apply Dirichlet boundary conditions to the solution."""
+        u[0, :] = 0
+        u[-1, :] = 0
+        u[:, 0] = 0
+        u[:, -1] = 0
+        return u
+    
+    def animate(self, **kwargs):
+        """Produce an animation of the wave equation solutions."""
+        (xx, yy), values = self.evaluate()
+
+        fig = plt.figure()
+        self.ax = fig.add_subplot(projection="3d")
+
+        self.plots = [self.ax.plot_surface(xx, yy, values, cmap="viridis")]
+
+        self.ax.set_xlabel(r"$x$")
+        self.ax.set_ylabel(r"$y$")
+
+        fig.tight_layout()
+
+        if isinstance(kwargs["frames"], int):
+            frame_count = kwargs["frames"]
+        else:
+            frame_count = len(kwargs["frames"])
+
+        with alive_bar(frame_count, title="Generating frames...") as bar:
+            ani = animation.FuncAnimation(
+                fig, self._animate, init_func=lambda: None, fargs=(bar,),
+                **kwargs
+            )
+
+            writer = animation.PillowWriter(fps=15)
+            ani.save("../figures/wave_2d.gif", writer=writer)
+    
+    def _animate(self, k, bar=lambda: None):
+        """Advance the wave equation up to time step k."""
+        for _ in range(k - self.time_step):
+            self.step()
+        bar()
+
+        (xx, yy), values = self.evaluate()
+
+        self.plots[0].remove()
+        self.plots[0] = self.ax.plot_surface(xx, yy, values, cmap="viridis")
+
+        return self.plots
