@@ -287,10 +287,17 @@ class FiniteDifferenceWaveEquation(WaveEquation):
     
     def _neumann(self, u):
         """Apply Neumann boundary conditions to the solution."""
-        u[0, :] = (4 * self.u_1[1, :] - self.u_1[2, :]) / 3
-        u[-1, :] = (4 * self.u_1[-2, :] - self.u_1[-3, :]) / 3
-        u[:, 0] = (4 * self.u_1[:, 1] - self.u_1[:, 2]) / 3
-        u[:, -1] = (4 * self.u_1[:, -2] - self.u_1[:, -3]) / 3
+        # Apply the edge conditions.
+        u[0, 1:-1] = (4 * u[1, 1:-1] - u[2, 1:-1]) / 3
+        u[-1, 1:-1] = (4 * u[-2, 1:-1] - u[-3, 1:-1]) / 3
+        u[1:-1, 0] = (4 * u[1:-1, 1] - u[1:-1, 2]) / 3
+        u[1:-1, -1] = (4 * u[1:-1, -2] - u[1:-1, -3]) / 3
+
+        # Apply the corner conditions.
+        u[0, 0] = (u[0, 1] + u[1, 0]) / 2
+        u[0, -1] = (u[0, -2] + u[1, -1]) / 2
+        u[-1, 0] = (u[-1, 1] + u[-2, 0]) / 2
+        u[-1, -1] = (u[-1, -2] + u[-2, -1]) / 2
     
     def _dirichlet(self, u):
         """Apply Dirichlet boundary conditions to the solution."""
