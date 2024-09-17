@@ -5,6 +5,7 @@ from alive_progress import alive_bar
 import numpy as np
 import scipy.sparse as sp
 from fe_utils import LagrangeElement, FunctionSpace, UnitSquareMesh, Function, gauss_quadrature
+from wave_solvers.utils import boundary_nodes
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -144,6 +145,10 @@ class FiniteElementWaveEquation(WaveEquation):
         # Assemble the finite element system.
         A, l = self.assemble(self.fs, f, self.c, self.dt)
 
+        # Apply the boundary conditions.
+        if self.boundary_conditions == "dirichlet":
+            self._dirichlet(A, l)
+
         # Create the function to hold the solution.
         u = Function(self.fs)
 
@@ -166,10 +171,13 @@ class FiniteElementWaveEquation(WaveEquation):
         """Apply Neumann boundary conditions to the solution."""
         pass
     
-    def _dirichlet(self):
+    def _dirichlet(self, A, l):
         """Apply Dirichlet boundary conditions to the solution."""
-        self.u_0.values[self.fs.boundary_nodes] = 0
-        self.u_1.values[self.fs.boundary_nodes] = 0
+        boundary = boundary_nodes(self.fs)
+
+        A[boundary, :] = 0
+        A[boundary, boundary] = 1
+        l[boundary] = 0
 
     def animate(self, subdivisions=None, **kwargs):
         """Produce an animation of the wave equation solutions."""
