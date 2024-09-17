@@ -273,9 +273,9 @@ class FiniteDifferenceWaveEquation(WaveEquation):
 
         # Update the boundary conditions.
         if self.boundary_conditions == "neumann":
-            u = self._neumann(u)
+            self._neumann(u)
         elif self.boundary_conditions == "dirichlet":
-            u = self._dirichlet(u)
+            self._dirichlet(u)
 
         self.u_0, self.u_1 = self.u_1, u
 
@@ -287,11 +287,10 @@ class FiniteDifferenceWaveEquation(WaveEquation):
     
     def _neumann(self, u):
         """Apply Neumann boundary conditions to the solution."""
-        u[0, :] = (4 * u[1, :] - u[2, :]) / 3
-        u[-1, :] = (4 * u[-2, :] - u[-3, :]) / 3
-        u[:, 0] = (4 * u[:, 1] - u[:, 2]) / 3
-        u[:, -1] = (4 * u[:, -2] - u[:, -3]) / 3
-        return u
+        u[0, :] = (4 * self.u_1[1, :] - self.u_1[2, :]) / 3
+        u[-1, :] = (4 * self.u_1[-2, :] - self.u_1[-3, :]) / 3
+        u[:, 0] = (4 * self.u_1[:, 1] - self.u_1[:, 2]) / 3
+        u[:, -1] = (4 * self.u_1[:, -2] - self.u_1[:, -3]) / 3
     
     def _dirichlet(self, u):
         """Apply Dirichlet boundary conditions to the solution."""
@@ -299,8 +298,7 @@ class FiniteDifferenceWaveEquation(WaveEquation):
         u[-1, :] = 0
         u[:, 0] = 0
         u[:, -1] = 0
-        return u
-    
+
     def animate(self, **kwargs):
         """Produce an animation of the wave equation solutions."""
         (xx, yy), values = self.evaluate()
