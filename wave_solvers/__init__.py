@@ -1,2 +1,1 @@
-from .animators import WaveAnimation
-from .solvers import FiniteElementWaveEquation
+from .solvers import FiniteElementWaveEquation, FiniteDifferenceWaveEquation

@@ -4,19 +4,10 @@ using the finite element method.
 If run as a script, the result is plotted. This file can also be
 imported as a module and convergence tests run on the solver.
 """
-from __future__ import division
 from argparse import ArgumentParser
 import numpy as np
-from wave_solvers import WaveAnimation, FiniteElementWaveEquation
-
-
-def bump_function(x, x0, radius=1.0):
-    """A bump function centred at x0 with a given radius."""
-
-    if np.linalg.norm(x - x0) < radius:
-        return np.exp(1 + radius**2 / (np.linalg.norm(x - x0)**2 - radius**2))
-    else:
-        return 0.0
+from wave_solvers import FiniteElementWaveEquation
+from wave_solvers.utils import bump_function
 
 
 if __name__ == "__main__":
@@ -47,12 +38,11 @@ if __name__ == "__main__":
     plot_error = args.error
 
     # Generate the initial conditions.
-    u_0 = lambda x: bump_function(x, np.array([0.5, 0.5]), 0.1)
+    u_0 = lambda x: bump_function(x[0], x[1], 0.5, 0.5, 0.1)
     u_1 = u_0
 
     # Create solver object.
     solver = FiniteElementWaveEquation(resolution, degree, wave_speed, time_step, u_0, u_1)
     
     # Generate and save the animation.
-    ani = WaveAnimation(solver)
-    ani(frames=60)
+    solver.animate(frames=max_step)
