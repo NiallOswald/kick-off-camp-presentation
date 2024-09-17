@@ -16,7 +16,7 @@ plt.rcParams.update({'font.size': 12})
 class WaveEquation(ABC):
     """A base class for wave equation solvers."""
 
-    def __init__(self, c, dt, u_0, u_1):
+    def __init__(self, c, dt, u_0, u_1, boundary_conditions="neumann"):
         """Initialise the wave equation solver.
         
         :param c: The wave speed.
@@ -27,6 +27,7 @@ class WaveEquation(ABC):
         self.c = c
         self.dt = dt
         self.u_0, self.u_1 = u_0, u_1
+        self.boundary_conditions = boundary_conditions
 
         self.time_step = 0
 
@@ -39,12 +40,32 @@ class WaveEquation(ABC):
     def evaluate(self, x):
         """Evaluate the wave equation solution at collection of points."""
         raise NotImplementedError
+    
+    @abstractmethod
+    def animate(self, **kwargs):
+        """Produce an animation of the wave equation solutions."""
+        raise NotImplementedError
+    
+    @abstractmethod
+    def _animate(self, k, bar=lambda: None):
+        """Advance the wave equation up to time step k."""
+        raise NotImplementedError
+    
+    @abstractmethod
+    def _neumann(self):
+        """Apply Neumann boundary conditions to the solution."""
+        raise NotImplementedError
+    
+    @abstractmethod
+    def _dirichlet(self):
+        """Apply Dirichlet boundary conditions to the solution."""
+        raise NotImplementedError
 
 
 class FiniteElementWaveEquation(WaveEquation):
     """A finite element solver for the wave equation."""
 
-    def __init__(self, resolution, degree, c, dt, u_0, u_1):
+    def __init__(self, resolution, degree, c, dt, u_0, u_1, boundary_conditions="neumann"):
         """Initialise the finite element wave equation solver.
         
         :param resolution: The number of cells in each direction.
@@ -68,7 +89,7 @@ class FiniteElementWaveEquation(WaveEquation):
         fs_u_1.interpolate(u_1)
         fs_u_1.values[:] = np.nan_to_num(fs_u_1.values, 0.0)
 
-        super().__init__(c, dt, fs_u_0, fs_u_1)
+        super().__init__(c, dt, fs_u_0, fs_u_1, boundary_conditions)
 
     @staticmethod
     def assemble(fs, f, wave_speed, dt):
@@ -214,7 +235,6 @@ class FiniteDifferenceWaveEquation(WaveEquation):
         :param u_1: The current state of the wave equation.
         """
         self.n = n
-        self.boundary_conditions = boundary_conditions
 
         # Compute the spatial step size.
         self.dx = 1 / (n - 1)
@@ -233,7 +253,7 @@ class FiniteDifferenceWaveEquation(WaveEquation):
         # Compute the CFL number.
         self.cfl = c * dt / self.dx
 
-        super().__init__(c, dt, u_0, u_1)
+        super().__init__(c, dt, u_0, u_1, boundary_conditions)
 
     def step(self):
         """Advance the wave equation by one time step."""
