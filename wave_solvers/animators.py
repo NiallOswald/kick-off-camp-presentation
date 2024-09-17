@@ -22,7 +22,7 @@ class WaveAnimation:
 
     def __call__(self, **kwargs):
         """Produce an animation of the wave equation solutions."""
-        coords, values, triangles = self.solver.evaluate()
+        coords, values, triangles = self.solver.evaluate(return_triangles=True)
 
         fig = plt.figure()
         self.ax = fig.add_subplot(projection="3d")
@@ -59,7 +59,7 @@ class WaveAnimation:
             self.solver.step()
         bar()
 
-        coords, values, triangles = self.solver.evaluate(self.subdivisions)
+        coords, values, triangles = self.solver.evaluate(self.subdivisions, return_triangles=True)
 
         for i in range(len(self.plots)):
             self.plots[i].remove()

@@ -130,9 +130,9 @@ class FiniteElementWaveEquation(WaveEquation):
 
         super().step()
 
-    def evaluate(self, *args):
+    def evaluate(self, *args, **kwargs):
         """Evaluate the wave equation solution at collection of points."""
-        return self.u_1.evaluate(*args)
+        return self.u_1.evaluate(*args, **kwargs)
 
 
 class FiniteDifferenceWaveEquation(WaveEquation):
