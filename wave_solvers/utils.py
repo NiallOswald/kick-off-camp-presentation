@@ -10,6 +10,11 @@ def bump_function(x, y, x0, y0, radius=1.0):
     return np.where(val < 0, np.exp(1 + radius**2 / val), 0.0)
 
 
+def cosine(x, y, c=1.0, t=0.0):
+    """A cosine function with a given period."""
+    return np.cos(np.pi * x) * np.cos(np.pi * y) * np.cos(np.pi * c * t * np.sqrt(2))
+
+
 def boundary_nodes(fs):
     """Find the list of boundary nodes in fs. This is a
     unit-square-specific solution. A more elegant solution would employ
