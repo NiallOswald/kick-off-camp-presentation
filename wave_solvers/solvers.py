@@ -204,6 +204,8 @@ class FiniteElementWaveEquation(WaveEquation):
         self.ax.set_ylabel(r"$y$")
         self.ax.set_zlabel(r"$\eta$")
 
+        self.ax.set_zlim(-1, 1)
+
         fig.tight_layout()
 
         if isinstance(kwargs["frames"], int):
@@ -375,6 +377,8 @@ class FiniteDifferenceWaveEquation(WaveEquation):
         self.ax.set_xlabel(r"$x$")
         self.ax.set_ylabel(r"$y$")
         self.ax.set_zlabel(r"$\eta$")
+
+        self.ax.set_zlim(-1, 1)
 
         fig.tight_layout()
 
