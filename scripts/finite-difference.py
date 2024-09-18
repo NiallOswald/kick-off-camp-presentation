@@ -5,14 +5,13 @@ If run as a script, the result is plotted. This file can also be
 imported as a module and convergence tests run on the solver.
 """
 from argparse import ArgumentParser
+from alive_progress import alive_bar
 import numpy as np
+
 from wave_solvers import FiniteDifferenceWaveEquation
+from wave_solvers.utils import bump_function, cosine
 
-
-def bump_function(x, y, x0, y0, radius=1.0):
-    """A bump function centred at x0 with a given radius."""
-    val = (x - x0)**2 + (y - y0)**2 - radius**2
-    return np.where(val < 0, np.exp(1 + radius**2 / val), 0.0)
+import matplotlib.pyplot as plt
 
 
 if __name__ == "__main__":
@@ -40,12 +39,43 @@ if __name__ == "__main__":
     plot_error = args.error
 
     # Generate the initial conditions.
-    u_0 = lambda x, y: bump_function(x, y, 0.5, 0.5, 0.5)
+    if plot_error:
+        u_0 = lambda x, y: cosine(x, y, wave_speed)
+    else:
+        u_0 = lambda x, y: bump_function(x, y, 0.5, 0.5, 0.1)
     u_1 = u_0
 
     # Create solver object.
     solver = FiniteDifferenceWaveEquation(resolution, wave_speed, time_step, u_0, u_1)
     print(f"CFL number is {solver.cfl}/{1 / np.sqrt(2)}.")
-    
-    # Generate and save the animation.
-    solver.animate(frames=max_step)
+
+    if plot_error:
+        # Iterate numerical solution.
+        with alive_bar(max_step, title="Iterating...") as bar: 
+            solver.advance(max_step, bar)
+        (xx, yy), values = solver.evaluate()
+
+        # Evaluate the exact solution.
+        final_time = solver.time_step * time_step
+        exact = cosine(xx, yy, wave_speed, final_time)
+
+        # Compute the mean squared error.
+        error = np.sqrt(np.mean((values - exact)**2))
+        print(f"Root mean squared error is {error}.")
+
+        # Plot the error.
+        plt.figure()
+
+        plt.pcolormesh(xx, yy, values - exact, shading="auto")
+
+        plt.colorbar()
+
+        plt.xlabel("x")
+        plt.ylabel("y")
+        plt.title("Error in the numerical solution")
+
+        plt.show()
+
+    else:
+        # solver.animate(frames=max_step)
+        solver.cplot(frames=max_step)
