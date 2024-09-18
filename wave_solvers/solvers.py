@@ -62,6 +62,12 @@ class WaveEquation(ABC):
     def _dirichlet(self):
         """Apply Dirichlet boundary conditions to the solution."""
         raise NotImplementedError
+    
+    def advance(self, k, bar=lambda: None):
+        """Advance the wave equation up to time step k."""
+        for _ in range(k - self.time_step):
+            self.step()
+            bar()
 
 
 class FiniteElementWaveEquation(WaveEquation):
@@ -191,11 +197,12 @@ class FiniteElementWaveEquation(WaveEquation):
         for c in range(coords.shape[0]):
             self.plots.append(self.ax.plot_trisurf(
                 Triangulation(coords[c, :, 0], coords[c, :, 1], triangles),
-                              values[c, :], linewidth=0)
+                              values[c, :], linewidth=0),
             )
 
         self.ax.set_xlabel(r"$x$")
         self.ax.set_ylabel(r"$y$")
+        self.ax.set_zlabel(r"$\eta$")
 
         fig.tight_layout()
 
@@ -211,12 +218,11 @@ class FiniteElementWaveEquation(WaveEquation):
             )
 
             writer = animation.PillowWriter(fps=15)
-            ani.save("../figures/wave_2d.gif", writer=writer)
+            ani.save("../figures/fem-surf.gif", writer=writer)
     
     def _animate(self, k, subdivisions, bar=lambda: None):
         """Advance the wave equation up to time step k."""
-        for _ in range(k - self.time_step):
-            self.step()
+        self.advance(k)
         bar()
 
         coords, values, triangles = self.evaluate(subdivisions, return_triangles=True)
@@ -225,9 +231,59 @@ class FiniteElementWaveEquation(WaveEquation):
             self.plots[i].remove()
             self.plots[i] = self.ax.plot_trisurf(
                 Triangulation(coords[i, :, 0], coords[i, :, 1], triangles),
-                              values[i, :], linewidth=0
+                              values[i, :], linewidth=0,
             )
 
+        return self.plots
+    
+    def cplot(self, **kwargs):
+        fig, self.ax = plt.subplots()
+
+        coords, values, triangles = self.evaluate(return_triangles=True)
+
+        norm = colors.SymLogNorm(linthresh=1e-2, linscale=1.0,
+                                 vmin=-1.0, vmax=1.0, base=10)
+        self.plots = []
+        for c in range(coords.shape[0]):
+            self.plots.append(self.ax.tripcolor(
+                coords[c, :, 0], coords[c, :, 1], triangles, values[c, :],
+                norm=norm, cmap='RdBu_r', shading='gouraud'
+            ))
+        fig.colorbar(self.plots[0], ax=self.ax, extend='both', label=r"$u$")
+
+        self.ax.set_xlabel(r"$x$")
+        self.ax.set_ylabel(r"$y$")
+
+        fig.tight_layout()
+
+        if isinstance(kwargs["frames"], int):
+            frame_count = kwargs["frames"]
+        else:
+            frame_count = len(kwargs["frames"])
+        
+        with alive_bar(frame_count, title="Generating frames...") as bar:
+            ani = animation.FuncAnimation(
+                fig, self._cplot, init_func=lambda: None, fargs=(norm, bar,),
+                **kwargs
+            )
+
+            writer = animation.PillowWriter(fps=15)
+            ani.save("../figures/fem-cplot.gif", writer=writer)
+
+    def _cplot(self, k, norm, bar=lambda: None):
+        """Advance the wave equation up to time step k."""
+        self.advance(k)
+        bar()
+
+        coords, values, triangles = self.evaluate(return_triangles=True)
+
+        for i in range(len(self.plots)):
+            self.plots[i].remove()
+            self.plots[i] = self.ax.tripcolor(
+                coords[i, :, 0], coords[i, :, 1], triangles, values[i, :],
+                norm=norm, cmap='RdBu_r', shading='gouraud'
+            )
+        
         return self.plots
 
 
@@ -318,6 +374,7 @@ class FiniteDifferenceWaveEquation(WaveEquation):
 
         self.ax.set_xlabel(r"$x$")
         self.ax.set_ylabel(r"$y$")
+        self.ax.set_zlabel(r"$\eta$")
 
         fig.tight_layout()
 
@@ -333,12 +390,11 @@ class FiniteDifferenceWaveEquation(WaveEquation):
             )
 
             writer = animation.PillowWriter(fps=15)
-            ani.save("../figures/wave_2d.gif", writer=writer)
+            ani.save("../figures/fdm-surf.gif", writer=writer)
     
     def _animate(self, k, bar=lambda: None):
         """Advance the wave equation up to time step k."""
-        for _ in range(k - self.time_step):
-            self.step()
+        self.advance(k)
         bar()
 
         (xx, yy), values = self.evaluate()
@@ -354,7 +410,7 @@ class FiniteDifferenceWaveEquation(WaveEquation):
         norm = colors.SymLogNorm(linthresh=1e-2, linscale=1.0,
                                  vmin=-1.0, vmax=1.0, base=10)
         self.plots = [self.ax.pcolormesh(self.xx, self.yy, self.u_1, norm=norm,
-                                    cmap='RdBu_r', shading='auto')]
+                                         cmap='RdBu_r', shading='auto')]
         fig.colorbar(self.plots[0], ax=self.ax, extend='both', label=r"$u$")
 
         self.ax.set_xlabel(r"$x$")
@@ -374,11 +430,10 @@ class FiniteDifferenceWaveEquation(WaveEquation):
             )
 
             writer = animation.PillowWriter(fps=15)
-            ani.save("../figures/wave_2d.gif", writer=writer)
+            ani.save("../figures/fdm-cplot.gif", writer=writer)
 
     def _cplot(self, k, norm, bar=lambda: None):
-        for _ in range(k - self.time_step):
-            self.step()
+        self.advance(k)
         bar()
 
         (xx, yy), values = self.evaluate()
