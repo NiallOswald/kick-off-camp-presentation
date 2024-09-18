@@ -9,6 +9,7 @@ from wave_solvers.utils import boundary_nodes
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from matplotlib import colors
 from matplotlib.tri import Triangulation
 
 plt.rcParams.update({'font.size': 12})
@@ -346,3 +347,45 @@ class FiniteDifferenceWaveEquation(WaveEquation):
         self.plots[0] = self.ax.plot_surface(xx, yy, values, cmap="viridis")
 
         return self.plots
+    
+    def cplot(self, **kwargs):
+        fig, self.ax = plt.subplots()
+
+        norm = colors.SymLogNorm(linthresh=1e-2, linscale=1.0,
+                                 vmin=-1.0, vmax=1.0, base=10)
+        self.plots = [self.ax.pcolormesh(self.xx, self.yy, self.u_1, norm=norm,
+                                    cmap='RdBu_r', shading='auto')]
+        fig.colorbar(self.plots[0], ax=self.ax, extend='both', label=r"$u$")
+
+        self.ax.set_xlabel(r"$x$")
+        self.ax.set_ylabel(r"$y$")
+
+        fig.tight_layout()
+
+        if isinstance(kwargs["frames"], int):
+            frame_count = kwargs["frames"]
+        else:
+            frame_count = len(kwargs["frames"])
+
+        with alive_bar(frame_count, title="Generating frames...") as bar:
+            ani = animation.FuncAnimation(
+                fig, self._cplot, init_func=lambda: None, fargs=(norm, bar,),
+                **kwargs
+            )
+
+            writer = animation.PillowWriter(fps=15)
+            ani.save("../figures/wave_2d.gif", writer=writer)
+
+    def _cplot(self, k, norm, bar=lambda: None):
+        for _ in range(k - self.time_step):
+            self.step()
+        bar()
+
+        (xx, yy), values = self.evaluate()
+
+        self.plots[0].remove()
+        self.plots[0] = self.ax.pcolormesh(xx, yy, values, norm=norm,
+                                           cmap='RdBu_r', shading='auto')
+        
+        return self.plots
+
